@@ -1,0 +1,10 @@
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\bin\Debug\BlackListInput.exe.config
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\bin\Debug\BlackListInput.exe
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\bin\Debug\BlackListInput.pdb
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.csprojResolveAssemblyReference.cache
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.csproj.ResolveComReference.cache
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.Form1.resources
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.Properties.Resources.resources
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.csproj.GenerateResource.Cache
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.exe
+c:\users\sato_\documents\visual studio 2015\Projects\BlackListInput\BlackListInput\obj\Debug\BlackListInput.pdb
