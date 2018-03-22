@@ -23,7 +23,7 @@ namespace PrimaFileIntegrationApp
         static IXLWorksheet worksheet =  workbook.Worksheet(2);
         static int lastRow = worksheet.LastRowUsed().RowNumber();
         string[] ProhibitBrandWord = new string[lastRow + 1];
-
+        string FileCategoryName = String.Empty;
         public FileIntegrationForm()
         {
             InitializeComponent();
@@ -65,7 +65,7 @@ namespace PrimaFileIntegrationApp
         /// <param name="e"></param>
         private void RunFileIntegrationButton_Click(object sender, EventArgs e)
         {
-            var FileCategoryName = SelectFileCategoryName(folderBrowserDialog1.SelectedPath);
+            FileCategoryName = SelectFileCategoryName(folderBrowserDialog1.SelectedPath);
             var OutFileNamePath = folderBrowserDialog1.SelectedPath + "\\IntegratedFile" + FileCategoryName + ".csv";
             var EditAndIntegratedFileName = folderBrowserDialog1.SelectedPath + "\\" + dtToday.ToString("yyyyMMdd") + "_EditAndIntegratedFile" + FileCategoryName + ".csv";
             
@@ -447,20 +447,17 @@ namespace PrimaFileIntegrationApp
             }
 
             //今日より先の発売日商品は除去
-            var StringToday = dtToday.ToString("yyyyMMdd");
-            var IntToday = int.Parse(StringToday);
-            if(String.IsNullOrEmpty(iProductData[ProductInfoLabel["発売日"]]) == false)
+            if (!FileCategoryName.Equals("_CD_used"))
             {
-                try
+                var StringToday = dtToday.ToString("yyyyMMdd");
+                var IntToday = int.Parse(StringToday);
+
+                if (String.IsNullOrEmpty(iProductData[ProductInfoLabel["発売日"]]) == false)
                 {
                     if ((IntToday - int.Parse(iProductData[ProductInfoLabel["発売日"]])) < 0)
                     {
                         return false;
                     }
-                }
-                catch(Exception)
-                {
-                    //何もしない
                 }
             }
 
@@ -486,55 +483,61 @@ namespace PrimaFileIntegrationApp
                 }
             }
 
-            //商品名、ブランド名から、出品不可商品を除去し、ブラックリストに登録する
-            foreach(var prohibit in ProhibitData){
-                if(String.IsNullOrEmpty(prohibit) == false)
+            //商品名、ブランド名から、出品不可商品を除去し、ブラックリストに登録する(CDのときは除外)
+            if (!FileCategoryName.Equals("_CD_used")) 
+            {
+                foreach (var prohibit in ProhibitData)
                 {
-                    var SearchWord = "\"" + prohibit.Trim() + "\"";     //商品名などは""で囲っているため、””で囲ってから検索する
-
-                    if (iProductData[ProductInfoLabel["商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase)) 
+                    if (String.IsNullOrEmpty(prohibit) == false)
                     {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                        var SearchWord = "\"" + prohibit.Trim() + "\"";     //商品名などは""で囲っているため、””で囲ってから検索する
 
-                        return false;
-                    }
+                        if (iProductData[ProductInfoLabel["商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
-                    if(iProductData[ProductInfoLabel["メーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                    {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                            return false;
+                        }
 
-                        return false;
-                    }
+                        if (iProductData[ProductInfoLabel["メーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
-                    if (iProductData[ProductInfoLabel["ブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase)) 
-                    {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                            return false;
+                        }
 
-                        return false;
-                    }
+                        if (iProductData[ProductInfoLabel["ブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
-                    if (iProductData[ProductInfoLabel["US商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase)) 
-                    {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                            return false;
+                        }
 
-                        return false;
-                    }
+                        if (iProductData[ProductInfoLabel["US商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
-                    if (iProductData[ProductInfoLabel["USメーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase)) 
-                    {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                            return false;
+                        }
 
-                        return false;
-                    }
+                        if (iProductData[ProductInfoLabel["USメーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
-                    if(iProductData[ProductInfoLabel["USブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                    {
-                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                            return false;
+                        }
 
-                        return false;
+                        if (iProductData[ProductInfoLabel["USブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                            return false;
+                        }
                     }
                 }
             }
+
+           
 
             return true;
         }

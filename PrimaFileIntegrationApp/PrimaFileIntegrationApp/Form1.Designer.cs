@@ -90,7 +90,7 @@
             this.Controls.Add(this.FilePathSelectButton);
             this.Controls.Add(this.FilePathTextBox);
             this.Name = "FileIntegrationForm";
-            this.Text = "PRIMAファイル統合/編集 Ver.1.5(2018.03)";
+            this.Text = "PRIMAファイル統合/編集 Ver.1.51(2018.03)";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
