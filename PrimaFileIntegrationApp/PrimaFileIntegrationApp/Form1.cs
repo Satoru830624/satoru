@@ -20,7 +20,7 @@ namespace PrimaFileIntegrationApp
         IDictionary<string, int> ProductInfoLabel = new Dictionary<string, int>();      //入力ファイル内のラベル(string)の位置(int)を格納する
 
         static XLWorkbook workbook = new XLWorkbook(@"C:\Users\sato_\Downloads\1.出品テンプレートファイル\出品禁止ブランド、キーワード.xlsx");
-        static IXLWorksheet worksheet =  workbook.Worksheet(2);
+        static IXLWorksheet worksheet =  workbook.Worksheet(1);
         static int lastRow = worksheet.LastRowUsed().RowNumber();
         string[] ProhibitBrandWord = new string[lastRow + 1];
         string FileCategoryName = String.Empty;
