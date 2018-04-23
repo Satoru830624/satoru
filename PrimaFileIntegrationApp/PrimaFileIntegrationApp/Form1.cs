@@ -97,7 +97,13 @@ namespace PrimaFileIntegrationApp
             {
                 using (var EditAndIntegratedFileWrite = new StreamWriter(EditAndIntegratedFileName, false, System.Text.Encoding.GetEncoding("sjis")))
                 {
-                    EditIntegratedFile(IntegratedFileRead, EditAndIntegratedFileWrite);
+                try{
+                        EditIntegratedFile(IntegratedFileRead, EditAndIntegratedFileWrite);
+                    }
+                    catch (FileLoadException)
+                    {
+                        Close();
+                    }
                 }
             }
 
@@ -258,29 +264,47 @@ namespace PrimaFileIntegrationApp
             string ReadFileLine;
             var FirstFlg = true; //1行目の商品情報かどうか
             var IsWritableData = true;
+            var LineCount = 0;
 
             while ((ReadFileLine = Read.ReadLine()) != null)
             {
                 var ProductData = ReadFileLine.Split(',');
-
-                if (FirstFlg == true)       //1行目の商品情報(ラベル)を取得し書き込む
+                try
                 {
-                    FirstFlg = false;
+                    if (FirstFlg == true)       //1行目の商品情報(ラベル)を取得し書き込む
+                    {
+                        FirstFlg = false;
+                        LineCount++;
 
-                    GetLabelIndex(ProductData);
+                        GetLabelIndex(ProductData);
+                    }
+                    else
+                    {
+                        LineCount++;
+                        //書き込むかどうかの判断をする
+                        IsWritableData = IsListableProductData(ProductData, ProhibitBrandWord);
+                    }
+
+                    if (IsWritableData == true)
+                    {
+                        WriteToEditFile(Write, ProductData);
+
+                        IsWritableData = false;
+                    }
+                    else
+                    {
+                        //何もしない
+                    }
                 }
-                else
+                catch(FileLoadException)
                 {
-                    //書き込むかどうかの判断をする
-                    IsWritableData = IsListableProductData(ProductData, ProhibitBrandWord);
+                    MessageBox.Show("ファイル出力エラーが発生しました。\n発生個所: " + LineCount.ToString() + "行目", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    throw new FileLoadException();
                 }
 
-                if (IsWritableData == true)
-                {
-                    WriteToEditFile(Write, ProductData);
 
-                    IsWritableData = false;
-                }
+
             }
         }
 
@@ -392,154 +416,158 @@ namespace PrimaFileIntegrationApp
         /// <returns>判断結果</returns>
         public bool IsListableProductData(string[] iProductData, string[] ProhibitData)
         {
-            //"ASIN"の値が"ASIN"でないデータを書き出す
-            if (iProductData[ProductInfoLabel["ASIN"]].Equals("ASIN") == true)
-            {
-                return false;
-            }
-
-            //"アダルトフラグ"、"US_アダルトフラグ"が"TRUE"でないデータを書き出す。”TRUE”のデータをブラックリストに書き込む
-            if (iProductData[ProductInfoLabel["アダルトフラグ"]].Equals("\"true\"", StringComparison.CurrentCultureIgnoreCase)
-                || iProductData[ProductInfoLabel["US_アダルトフラグ"]].Equals("\"true\"", StringComparison.CurrentCultureIgnoreCase))
-            {
-                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                return false;
-            }
-
-            //"出品者数"：3以上のデータを書き出す
-            if (iProductData[ProductInfoLabel["出品者数"]].Equals("0") == true || iProductData[ProductInfoLabel["出品者数"]].Equals("1") == true || iProductData[ProductInfoLabel["出品者数"]].Equals("2") == true)
-            {
-                return false;
-            }
-
-            //"最安値"：0でないデータを書き出す
-            if (iProductData[ProductInfoLabel["最安値"]].Equals("0") == true)
-            {
-                return false;
-            }
-
-            //"商品重量(kg)"：0でない、かつ、1.5以下のデータを書き出す
-            if (iProductData[ProductInfoLabel["商品重量(kg)"]].Equals("0") == true || Convert.ToSingle(iProductData[ProductInfoLabel["商品重量(kg)"]]) > 1.5)
-            {
-                if(iProductData[ProductInfoLabel["商品重量(kg)"]].Equals("0") == true)
+            try {
+                //"ASIN"の値が"ASIN"でないデータを書き出す
+                if (iProductData[ProductInfoLabel["ASIN"]].Equals("ASIN") == true)
                 {
-                    AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                    return false;
                 }
 
-                return false;
-            }
-
-            //"サイズ_高さ(cm)"、"サイズ_長さ(cm)"、"サイズ_幅(cm)"の全てがゼロでない、もしくは合計が80以下のデータを書き出す
-            if(ProductInfoLabel.ContainsKey("サイズ_高さ(cm)") == true && ProductInfoLabel.ContainsKey("サイズ_長さ(cm)") == true && ProductInfoLabel.ContainsKey("サイズ_幅(cm)") == true)
-            {
-                if (iProductData[ProductInfoLabel["サイズ_高さ(cm)"]].Equals("0")
-                    || iProductData[ProductInfoLabel["サイズ_長さ(cm)"]].Equals("0")
-                    || iProductData[ProductInfoLabel["サイズ_幅(cm)"]].Equals("0")
-                    || Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_高さ(cm)"]])
-                        + Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_長さ(cm)"]])
-                        + Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_幅(cm)"]]) > 80)
+                //"アダルトフラグ"、"US_アダルトフラグ"が"TRUE"でないデータを書き出す。”TRUE”のデータをブラックリストに書き込む
+                if (iProductData[ProductInfoLabel["アダルトフラグ"]].Equals("\"true\"", StringComparison.CurrentCultureIgnoreCase)
+                    || iProductData[ProductInfoLabel["US_アダルトフラグ"]].Equals("\"true\"", StringComparison.CurrentCultureIgnoreCase))
                 {
                     AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
 
                     return false;
                 }
-            }
 
-            //今日より先の発売日商品は除去
-            if (!FileCategoryName.Equals("_CD_used"))
-            {
-                var StringToday = dtToday.ToString("yyyyMMdd");
-                var IntToday = int.Parse(StringToday);
-
-                if (String.IsNullOrEmpty(iProductData[ProductInfoLabel["発売日"]]) == false)
+                //"出品者数"：3以上のデータを書き出す
+                if (iProductData[ProductInfoLabel["出品者数"]].Equals("0") == true || iProductData[ProductInfoLabel["出品者数"]].Equals("1") == true || iProductData[ProductInfoLabel["出品者数"]].Equals("2") == true)
                 {
-                    if ((IntToday - int.Parse(iProductData[ProductInfoLabel["発売日"]])) < 0)
+                    return false;
+                }
+
+                //"最安値"：0でないデータを書き出す
+                if (iProductData[ProductInfoLabel["最安値"]].Equals("0") == true)
+                {
+                    return false;
+                }
+
+                //"商品重量(kg)"：0でない、かつ、1.5以下のデータを書き出す
+                if (iProductData[ProductInfoLabel["商品重量(kg)"]].Equals("0") == true || Convert.ToSingle(iProductData[ProductInfoLabel["商品重量(kg)"]]) > 1.5)
+                {
+                    if (iProductData[ProductInfoLabel["商品重量(kg)"]].Equals("0") == true)
                     {
+                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+                    }
+
+                    return false;
+                }
+
+                //"サイズ_高さ(cm)"、"サイズ_長さ(cm)"、"サイズ_幅(cm)"の全てがゼロでない、もしくは合計が80以下のデータを書き出す
+                if (ProductInfoLabel.ContainsKey("サイズ_高さ(cm)") == true && ProductInfoLabel.ContainsKey("サイズ_長さ(cm)") == true && ProductInfoLabel.ContainsKey("サイズ_幅(cm)") == true)
+                {
+                    if (iProductData[ProductInfoLabel["サイズ_高さ(cm)"]].Equals("0")
+                        || iProductData[ProductInfoLabel["サイズ_長さ(cm)"]].Equals("0")
+                        || iProductData[ProductInfoLabel["サイズ_幅(cm)"]].Equals("0")
+                        || Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_高さ(cm)"]])
+                            + Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_長さ(cm)"]])
+                            + Convert.ToSingle(iProductData[ProductInfoLabel["サイズ_幅(cm)"]]) > 80)
+                    {
+                        AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
                         return false;
                     }
                 }
-            }
 
-            //"US_出品者数"が"0" or "1"でないデータを書き出す（著作権クレームを受けやすいデータの為）
-            if (iProductData[ProductInfoLabel["US_出品者数"]].Equals("0") || iProductData[ProductInfoLabel["US_出品者数"]].Equals("1"))
-            {
-                return false;
-            }
-
-            //2番手安値が最安値の1.1倍以上なら、出品数を最低値（3）にする
-            if(iProductData[ProductInfoLabel["2番手安値"]].Equals("0") == false)
-            {
-                int LowestPrice, SecondLowestPrice; //最安値、二番手安値
-                bool IntFlgLowest = true, IntFlgSecond = true;//数値が取得できたかどうか
-
-                IntFlgLowest = int.TryParse(iProductData[ProductInfoLabel["最安値"]], out LowestPrice);
-
-                IntFlgSecond = int.TryParse(iProductData[ProductInfoLabel["2番手安値"]], out SecondLowestPrice);
-
-                if (IntFlgLowest == true && IntFlgSecond == true && (LowestPrice * 1.1 < SecondLowestPrice))
+                //今日より先の発売日商品は除去
+                if (!FileCategoryName.Equals("_CD_used"))
                 {
-                    iProductData[ProductInfoLabel["出品者数"]] = "3";
-                }
-            }
+                    var StringToday = dtToday.ToString("yyyyMMdd");
+                    var IntToday = int.Parse(StringToday);
 
-            //商品名、ブランド名から、出品不可商品を除去し、ブラックリストに登録する(CDのときは除外)
-            if (!FileCategoryName.Equals("_CD_used")) 
-            {
-                foreach (var prohibit in ProhibitData)
-                {
-                    if (String.IsNullOrEmpty(prohibit) == false)
+                    if (String.IsNullOrEmpty(iProductData[ProductInfoLabel["発売日"]]) == false)
                     {
-                        var SearchWord = "\"" + prohibit.Trim() + "\"";     //商品名などは""で囲っているため、””で囲ってから検索する
-
-                        if (iProductData[ProductInfoLabel["商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                        if ((IntToday - int.Parse(iProductData[ProductInfoLabel["発売日"]])) < 0)
                         {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                            return false;
-                        }
-
-                        if (iProductData[ProductInfoLabel["メーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                            return false;
-                        }
-
-                        if (iProductData[ProductInfoLabel["ブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                            return false;
-                        }
-
-                        if (iProductData[ProductInfoLabel["US商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                            return false;
-                        }
-
-                        if (iProductData[ProductInfoLabel["USメーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
-                            return false;
-                        }
-
-                        if (iProductData[ProductInfoLabel["USブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
-                        {
-                            AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
-
                             return false;
                         }
                     }
                 }
+
+                //"US_出品者数"が"0" or "1"でないデータを書き出す（著作権クレームを受けやすいデータの為）
+                if (iProductData[ProductInfoLabel["US_出品者数"]].Equals("0") || iProductData[ProductInfoLabel["US_出品者数"]].Equals("1"))
+                {
+                    return false;
+                }
+
+                //2番手安値が最安値の1.1倍以上なら、出品数を最低値（3）にする
+                if (iProductData[ProductInfoLabel["2番手安値"]].Equals("0") == false)
+                {
+                    int LowestPrice, SecondLowestPrice; //最安値、二番手安値
+                    bool IntFlgLowest = true, IntFlgSecond = true;//数値が取得できたかどうか
+
+                    IntFlgLowest = int.TryParse(iProductData[ProductInfoLabel["最安値"]], out LowestPrice);
+
+                    IntFlgSecond = int.TryParse(iProductData[ProductInfoLabel["2番手安値"]], out SecondLowestPrice);
+
+                    if (IntFlgLowest == true && IntFlgSecond == true && (LowestPrice * 1.1 < SecondLowestPrice))
+                    {
+                        iProductData[ProductInfoLabel["出品者数"]] = "3";
+                    }
+                }
+
+                //商品名、ブランド名から、出品不可商品を除去し、ブラックリストに登録する(CDのときは除外)
+                if (!FileCategoryName.Equals("_CD_used"))
+                {
+                    foreach (var prohibit in ProhibitData)
+                    {
+                        if (String.IsNullOrEmpty(prohibit) == false)
+                        {
+                            var SearchWord = "\"" + prohibit.Trim() + "\"";     //商品名などは""で囲っているため、””で囲ってから検索する
+
+                            if (iProductData[ProductInfoLabel["商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+
+                            if (iProductData[ProductInfoLabel["メーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+
+                            if (iProductData[ProductInfoLabel["ブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+
+                            if (iProductData[ProductInfoLabel["US商品名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+
+                            if (iProductData[ProductInfoLabel["USメーカ名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+
+                            if (iProductData[ProductInfoLabel["USブランド名"]].StartsWith(SearchWord, StringComparison.OrdinalIgnoreCase))
+                            {
+                                AddBlackList(iProductData[ProductInfoLabel["ASIN"]]);
+
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                return true;
             }
-
-           
-
-            return true;
+            catch(Exception)
+            {
+                throw new FileLoadException();
+            }
         }
 
         /// <summary>
