@@ -1,6 +1,10 @@
 import os
 from PIL import Image
 
+# 以下にパスを直接記入してください
+INPUT_FOLDER_PATH = '/path/to/your/input/folder'
+OUTPUT_FOLDER_PATH = '/path/to/your/output/folder'
+
 def change_dpi(input_path, output_path, dpi=(300, 300)):
     with Image.open(input_path) as img:
         img.save(output_path, dpi=dpi)
@@ -10,7 +14,7 @@ def process_folder(input_directory, output_directory):
         for file in files:
             if file.lower().endswith(('.jpg', '.jpeg')):
                 input_path = os.path.join(root, file)
-                relative_path = os.path.relpath(root, input_directory)  # 入力ディレクトリに対する相対パスを取得
+                relative_path = os.path.relpath(root, input_directory)
                 output_folder = os.path.join(output_directory, relative_path)
                 
                 if not os.path.exists(output_folder):
@@ -21,7 +25,4 @@ def process_folder(input_directory, output_directory):
                 print(f"{file} の解像度が300dpiに変更され、{output_path} に保存されました。")
 
 if __name__ == "__main__":
-    input_folder_path = input("JPEGファイルが含まれる入力フォルダのパスを入力してください: ")
-    output_folder_path = input("変更されたJPEGファイルを保存する出力フォルダのパスを入力してください: ")
-    
-    process_folder(input_folder_path, output_folder_path)
+    process_folder(INPUT_FOLDER_PATH, OUTPUT_FOLDER_PATH)
