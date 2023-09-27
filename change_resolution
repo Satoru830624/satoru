@@ -6,15 +6,17 @@ def change_dpi(input_path, output_path, dpi=(300, 300)):
         img.save(output_path, dpi=dpi)
 
 def process_folder(input_directory, output_directory):
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
     for root, _, files in os.walk(input_directory):
         for file in files:
             if file.lower().endswith(('.jpg', '.jpeg')):
                 input_path = os.path.join(root, file)
-                output_path = os.path.join(output_directory, file)
+                relative_path = os.path.relpath(root, input_directory)  # 入力ディレクトリに対する相対パスを取得
+                output_folder = os.path.join(output_directory, relative_path)
                 
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder)
+                
+                output_path = os.path.join(output_folder, file)
                 change_dpi(input_path, output_path)
                 print(f"{file} の解像度が300dpiに変更され、{output_path} に保存されました。")
 
