@@ -5,15 +5,21 @@ def change_dpi(input_path, output_path, dpi=(300, 300)):
     with Image.open(input_path) as img:
         img.save(output_path, dpi=dpi)
 
-def process_folder(directory):
-    for root, dirs, files in os.walk(directory):
+def process_folder(input_directory, output_directory):
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    for root, _, files in os.walk(input_directory):
         for file in files:
             if file.lower().endswith(('.jpg', '.jpeg')):
                 input_path = os.path.join(root, file)
-                # 同じフォルダに上書き保存
-                change_dpi(input_path, input_path)
-                print(f"{file} の解像度が300dpiに変更されました。")
+                output_path = os.path.join(output_directory, file)
+                
+                change_dpi(input_path, output_path)
+                print(f"{file} の解像度が300dpiに変更され、{output_path} に保存されました。")
 
 if __name__ == "__main__":
-    folder_path = input("JPEGファイルが含まれるフォルダのパスを入力してください: ")
-    process_folder(folder_path)
+    input_folder_path = input("JPEGファイルが含まれる入力フォルダのパスを入力してください: ")
+    output_folder_path = input("変更されたJPEGファイルを保存する出力フォルダのパスを入力してください: ")
+    
+    process_folder(input_folder_path, output_folder_path)
